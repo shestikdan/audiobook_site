@@ -1,0 +1,31 @@
+{% extends 'base_generic.html' %}
+
+{% block content %}
+<div class="container">
+    <h1 class="title">Библиотека</h1>
+    <div class="columns is-multiline">
+        {% for book in books %}
+        <div class="column is-one-quarter-desktop is-half-tablet is-full-mobile">
+            <div class="card">
+                <div class="card-image">
+                    <figure class="image is-4by3">
+                        <img src="{{ book.cover_image.url }}" alt="Обложка {{ book.name }}">
+                    </figure>
+                </div>
+                <div class="card-content">
+                    <div class="media">
+                        <div class="media-content">
+                            <p class="title is-4">{{ book.name }}</p>
+                            <p class="subtitle is-6">Автор: {{ book.author }}</p>
+                        </div>
+                    </div>
+                    <div class="content">
+                        <a href="{% url 'book_detail' book.id %}">Подробнее</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

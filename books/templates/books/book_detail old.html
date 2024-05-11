@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ book.name }}</title>
+    <script>
+        // Получение CSRF токена из куки
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+    </script>
+</head>
+<body>
+    <h1>{{ book.name }}</h1>
+    <ul>
+    {% for chapter in book.chapters.all %}
+        <li>
+            {{ chapter.name }} (Продолжительность: {{ chapter.duration }} минут)
+            <div data-chapter-id="{{ chapter.id }}">
+                <audio controls>
+                    <source src="{{ chapter.audio_file.url }}" type="audio/aac">
+                    Ваш браузер не поддерживает аудио элемент.
+                </audio>
+                <button onclick="setPlaybackRate(this, 1.5)">1.5x</button>
+                <button onclick="setPlaybackRate(this, 2)">2x</button>
+            </div>
+        </li>
+    {% endfor %}
+    </ul>
+
+    <script>
+       document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('audio').forEach(audio => {
+        const chapterId = audio.closest('[data-chapter-id]').dataset.chapterId;
+
+        // Подготовка аудио перед загрузкой прогресса и установкой src
+        let isTimeSet = false;
+
+        // Обработчики событий
+        audio.addEventListener('canplaythrough', () => {
+            if (!isTimeSet) {
+                console.log('Аудио полностью загружено и готово к воспроизведению.');
+                isTimeSet = true;
+            }
+        });
+
+        audio.addEventListener('loadedmetadata', () => {
+            console.log('Метаданные загружены.');
+        });
+
+        // Загрузка последней позиции воспроизведения
+        fetch(`/books/get-progress/${chapterId}/`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Последняя позиция: ', data.last_position);
+                if (data.last_position && data.last_position > 0) {
+                    audio.currentTime = data.last_position;
+                    audio.play();
+                }
+            })
+            .catch(error => console.error('Failed to load audio progress:', error));
+
+        // Отправка текущей позиции воспроизведения на сервер при паузе
+        audio.addEventListener('pause', function() {
+            const seconds = Math.floor(audio.currentTime);
+            console.log(`Сохранение прогресса: chapter ${chapterId} at time ${seconds}`);
+            fetch(`/books/update-progress/${chapterId}/${seconds}/`, {
+                method: 'POST',
+                headers: {
+                    "X-CSRFToken": csrftoken,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    'chapter_id': chapterId,
+                    'seconds': seconds
+                })
+            })
+            .then(response => response.json())
+            .then(data => console.log('Progress saved:', data))
+            .catch(error => console.error('Error:', error));
+        });
+    });
+});
+
+function setPlaybackRate(button, rate) {
+    var audio = button.parentElement.querySelector('audio');
+    audio.playbackRate = rate;
+}
+    </script>
+</body>
+</html>

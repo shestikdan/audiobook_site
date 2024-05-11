@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Аудиокниги{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+</head>
+<body>
+    {% block content %}
+    {% endblock %}
+</body>
+</html>
+
+<style>
+    .card-image img {
+        height: 100%;  /* Устанавливает высоту изображения равной высоте блока */
+        object-fit: contain;  /* Сохраняет пропорции изображения, не растягивая его */
+    }
+    .card {
+        height: 100%;  /* Одинаковая высота для всех карточек */
+    }
+    .card-content {
+        height: 150px;  /* Фиксированная высота контента карточки для унификации высоты всех карточек */
+    }
+    .container {
+        max-width: 960px;  /* Максимальная ширина контейнера */
+        padding: 20px;  /* Внутренние отступы контейнера */
+    }
+</style>

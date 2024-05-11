@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ book.name }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+    <style>
+        .progress-wrapper {
+            width: 100%; /* Полная ширина на мобильных устройствах для лучшей видимости */
+        }
+        @media (min-width: 768px) {
+            .progress-wrapper {
+                width: 60%; /* Ширина на планшетах и десктопах */
+            }
+        }
+    </style>
+    <script>
+        // Получение CSRF токена из куки
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function playAudio(chapterId) {
+            var audio = document.getElementById('audio-' + chapterId);
+            if (audio.paused) {
+                audio.play();
+            } else {
+                audio.pause();
+            }
+        }
+
+        function setPlaybackRate(button, rate) {
+            var audio = button.parentElement.querySelector('audio');
+            audio.playbackRate = rate;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('audio').forEach(audio => {
+                const chapterId = audio.id.split('-')[1];
+                const progressBar = document.getElementById('progress-' + chapterId);
+
+                // Загрузка последней позиции воспроизведения
+                fetch(`/books/get-progress/${chapterId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.last_position) {
+                            audio.currentTime = data.last_position;
+                            progressBar.value = (audio.currentTime / audio.duration) * 100;
+                        }
+                    })
+                    .catch(error => console.error('Failed to load audio progress:', error));
+
+                audio.addEventListener('timeupdate', () => {
+                    const value = (audio.currentTime / audio.duration) * 100;
+                    progressBar.value = value;
+                    progressBar.innerHTML = value.toFixed(2) + '%';
+                });
+
+                audio.addEventListener('pause', () => {
+                    const seconds = Math.floor(audio.currentTime);
+                    fetch(`/books/update-progress/${chapterId}/${seconds}/`, {
+                        method: 'POST',
+                        headers: {
+                            "X-CSRFToken": getCookie('csrftoken'),
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            'chapter_id': chapterId,
+                            'seconds': seconds
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => console.log('Progress saved:', data))
+                    .catch(error => console.error('Error:', error));
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <section class="section">
+        <div class="container">
+            <h1 class="title">{{ book.name }}</h1>
+            <table class="table is-fullwidth is-striped is-hoverable is-narrow is-responsive">
+                <thead>
+                    <tr>
+                        <th>Глава</th>
+                        <th>Прогресс</th>
+                        <th>Управление</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for chapter in book.chapters.all %}
+                    <tr data-chapter-id="{{ chapter.id }}">
+                        <td>{{ chapter.name }}</td>
+                        <td>
+                            <div class="progress-wrapper">
+                                <progress class="progress is-small is-primary" value="0" max="100" id="progress-{{ chapter.id }}">0%</progress>
+                            </div>
+                        </td>
+                        <td>
+                            <button class="button is-small" onclick="playAudio({{ chapter.id }})">▶️</button>
+                            <button class="button is-small" onclick="setPlaybackRate(this, 1)">1x</button>
+                            <button class="button is-small" onclick="setPlaybackRate(this, 1.5)">1.5x</button>
+                            <button class="button is-small" onclick="setPlaybackRate(this, 2)">2x</button>
+                            <audio id="audio-{{ chapter.id }}" style="display:none;">
+                                <source src="{{ chapter.audio_file.url }}" type="audio/aac">
+                                Ваш браузер не поддерживает аудио элемент.
+                            </audio>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</body>
+</html>
