@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ book.name }}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
     <style>
@@ -9,11 +10,20 @@
             border-left: 5px solid #3273dc; /* Синий бордюр для активной подглавы */
             background-color: #e8f0fe; /* Светло-голубой фон для активной подглавы */
         }
+        @media (max-width: 768px) {
+        .buttons.has-addons button {
+            width: 100%;  
+            margin-top: 5px; 
+        }
+        .media-content {
+            margin-bottom: 10px; 
+        }
+    }
     </style>
 </head>
 <body>
     <section class="section">
-        <div class="container">
+        <div class="container columns">
             <h1 class="title">{{ book.name }}</h1>
             {% for chapter in book.chapters.all %}
             <div class="box">
@@ -35,11 +45,12 @@
                             Ваш браузер не поддерживает аудио элемент.
                         </audio>
                         <div class="buttons has-addons">
-                            <button class="button" onclick="playAudio('{{ subchapter.id }}', this)">Play</button>
-                            <button class="button" onclick="setPlaybackRate('{{ subchapter.id }}', 1, this)">1x</button>
-                            <button class="button" onclick="setPlaybackRate('{{ subchapter.id }}', 1.5, this)">1.5x</button>
-                            <button class="button" onclick="setPlaybackRate('{{ subchapter.id }}', 2, this)">2x</button>
+                            <button class="button is-primary column" onclick="playAudio('{{ subchapter.id }}', this)">Play</button>
+                            <button class="button column is-info" onclick="setPlaybackRate('{{ subchapter.id }}', 1, this)">1x</button>
+                            <button class="button column" onclick="setPlaybackRate('{{ subchapter.id }}', 1.5, this)">1.5x</button>
+                            <button class="button column" onclick="setPlaybackRate('{{ subchapter.id }}', 2, this)">2x</button>
                         </div>
+                        <div id="current-time-{{ subchapter.id }}">0</div>
                         <progress class="progress is-primary" value="0" max="100" id="progress-{{ subchapter.id }}">0%</progress>
                     </div>
                     {% endfor %}
@@ -134,17 +145,39 @@
             progressBar.value = value;
             progressBar.textContent = Math.round(value) + '%';
         }
+        function formatTime(seconds) {
+            const min = Math.floor(seconds / 60); 
+            const sec = Math.floor(seconds % 60); 
+
+            return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('audio').forEach(audio => {
+                
+                audio.addEventListener('loadedmetadata', () => {
+                    const duration = Math.floor(audio.duration);
+                    currentTimeDisplay.textContent = `00:00 / ${formatTime(duration)}`;
+
+                });
+
+                const subchapterId = audio.id.split('-')[1];
+                const progressBar = document.getElementById('progress-' + subchapterId);
+
+                fetchProgress(subchapterId, audio, progressBar);
+                audio.addEventListener('timeupdate', () => {
                     const subchapterId = audio.id.split('-')[1];
                     const progressBar = document.getElementById('progress-' + subchapterId);
-                    fetchProgress(subchapterId, audio, progressBar);
-                    audio.addEventListener('timeupdate', () => {
-                        const subchapterId = audio.id.split('-')[1];
-                        const progressBar = document.getElementById('progress-' + subchapterId);
-                        setProgress(progressBar, audio.currentTime, audio.duration);
-                    });
+                    setProgress(progressBar, audio.currentTime, audio.duration);
+                    const currentTimeDisplay = document.getElementById('current-time-' + subchapterId);
+                    const currentTime = Math.floor(audio.currentTime);
+                    const duration = Math.floor(audio.duration);
+                  currentTimeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+                    console.log(currentTime, '   ', subchapterId)
+                    const value = (audio.currentTime / audio.duration) * 100;
+                    progressBar.value = value;
+                    progressBar.textContent = Math.round(value) + '%';
+                });
             });
         });
     </script>
