@@ -9,7 +9,8 @@ def book_list(request):
     return render(request, 'books/book_list.html', {'books': books})
 
 def book_detail(request, pk):
-    book = get_object_or_404(Book, pk=pk)
+    # Загружаем книгу по первичному ключу с предзагрузкой глав и подглав
+    book = get_object_or_404(Book.objects.prefetch_related('chapters__subchapters'), pk=pk)
     return render(request, 'books/book_detail.html', {'book': book})
 
 def get_progress(request, chapter_id):

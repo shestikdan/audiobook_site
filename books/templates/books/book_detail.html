@@ -5,125 +5,155 @@
     <title>{{ book.name }}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
     <style>
-        .progress-wrapper {
-            width: 100%; /* Полная ширина на мобильных устройствах для лучшей видимости */
+        .active-card {
+            border-color: #3273dc; /* Синий цвет рамки для активной карточки */
+            background-color: #f0f0f0; /* Светлый фон для активной карточки */
         }
-        @media (min-width: 768px) {
-            .progress-wrapper {
-                width: 60%; /* Ширина на планшетах и десктопах */
+        .active-button {
+            background-color: #3273dc; /* Синий цвет для активной кнопки */
+            color: white;
+        }
+        .active-subchapter {
+            border-left: 5px solid #3273dc; /* Синий бордюр для активной подглавы */
+            background-color: #e8f0fe; /* Светло-голубой фон для активной подглавы */
+        }
+        .hidden {
+            display: none; /* Скрывает элемент */
+        }
+        .visible {
+            display: block; /* Отображает элемент как блок */
+            animation: slideDown 0.3s ease-out; /* Анимация появления */
+        }
+        @keyframes slideDown {
+            0% {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
     </style>
-    <script>
-        // Получение CSRF токена из куки
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-
-        function playAudio(chapterId) {
-            var audio = document.getElementById('audio-' + chapterId);
-            if (audio.paused) {
-                audio.play();
-            } else {
-                audio.pause();
-            }
-        }
-
-        function setPlaybackRate(button, rate) {
-            var audio = button.parentElement.querySelector('audio');
-            audio.playbackRate = rate;
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('audio').forEach(audio => {
-                const chapterId = audio.id.split('-')[1];
-                const progressBar = document.getElementById('progress-' + chapterId);
-
-                // Загрузка последней позиции воспроизведения
-                fetch(`/books/get-progress/${chapterId}/`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.last_position) {
-                            audio.currentTime = data.last_position;
-                            progressBar.value = (audio.currentTime / audio.duration) * 100;
-                        }
-                    })
-                    .catch(error => console.error('Failed to load audio progress:', error));
-
-                audio.addEventListener('timeupdate', () => {
-                    const value = (audio.currentTime / audio.duration) * 100;
-                    progressBar.value = value;
-                    progressBar.innerHTML = value.toFixed(2) + '%';
-                });
-
-                audio.addEventListener('pause', () => {
-                    const seconds = Math.floor(audio.currentTime);
-                    fetch(`/books/update-progress/${chapterId}/${seconds}/`, {
-                        method: 'POST',
-                        headers: {
-                            "X-CSRFToken": getCookie('csrftoken'),
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            'chapter_id': chapterId,
-                            'seconds': seconds
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => console.log('Progress saved:', data))
-                    .catch(error => console.error('Error:', error));
-                });
-            });
-        });
-    </script>
 </head>
 <body>
     <section class="section">
         <div class="container">
             <h1 class="title">{{ book.name }}</h1>
-            <table class="table is-fullwidth is-striped is-hoverable is-narrow is-responsive">
-                <thead>
-                    <tr>
-                        <th>Глава</th>
-                        <th>Прогресс</th>
-                        <th>Управление</th>
-                    </tr>
-                </thead>
-                <tbody>
+            <div class="columns is-multiline">
                 {% for chapter in book.chapters.all %}
-                    <tr data-chapter-id="{{ chapter.id }}">
-                        <td>{{ chapter.name }}</td>
-                        <td>
-                            <div class="progress-wrapper">
-                                <progress class="progress is-small is-primary" value="0" max="100" id="progress-{{ chapter.id }}">0%</progress>
+                <div class="column is-full">
+                    <div class="card" id="card-{{ chapter.id }}">
+                        <header class="card-header" onclick="toggleSubchapters('{{ chapter.id }}')">
+                            <p class="card-header-title">{{ chapter.name }}</p>
+                        </header>
+                        <div class="card-content hidden" id="subchapters-{{ chapter.id }}">
+                            {% for subchapter in chapter.subchapters.all %}
+                            <div class="box" id="subchapter-box-{{ subchapter.id }}">
+                                <div>
+                                    <strong>{{ subchapter.name }}</strong>
+                                    <audio controls id="audio-{{ subchapter.id }}" hidden>
+                                        <source src="{{ subchapter.audio_file.url }}" type="audio/mpeg">
+                                        Ваш браузер не поддерживает аудио элемент.
+                                    </audio>
+                                    <div class="buttons">
+                                        <button class="button play-pause" onclick="playAudio('{{ subchapter.id }}', this)">▶️</button>
+                                        <button class="button" onclick="setPlaybackRate('{{ subchapter.id }}', 1, this)">1x</button>
+                                        <button class="button" onclick="setPlaybackRate('{{ subchapter.id }}', 1.5, this)">1.5x</button>
+                                        <button class="button" onclick="setPlaybackRate('{{ subchapter.id }}', 2, this)">2x</button>
+                                    </div>
+                                    <progress class="progress is-primary" value="0" max="100" id="progress-{{ subchapter.id }}">0%</progress>
+                                </div>
                             </div>
-                        </td>
-                        <td>
-                            <button class="button is-small" onclick="playAudio({{ chapter.id }})">▶️</button>
-                            <button class="button is-small" onclick="setPlaybackRate(this, 1)">1x</button>
-                            <button class="button is-small" onclick="setPlaybackRate(this, 1.5)">1.5x</button>
-                            <button class="button is-small" onclick="setPlaybackRate(this, 2)">2x</button>
-                            <audio id="audio-{{ chapter.id }}" style="display:none;">
-                                <source src="{{ chapter.audio_file.url }}" type="audio/aac">
-                                Ваш браузер не поддерживает аудио элемент.
-                            </audio>
-                        </td>
-                    </tr>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
                 {% endfor %}
-                </tbody>
-            </table>
+            </div>
         </div>
     </section>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('audio').forEach(audio => {
+                audio.addEventListener('timeupdate', () => {
+                    const subchapterId = audio.id.split('-')[1];
+                    const progressBar = document.getElementById('progress-' + subchapterId);
+                    const value = (audio.currentTime / audio.duration) * 100;
+                    progressBar.value = value;
+                    progressBar.textContent = Math.round(value) + '%';
+                });
+            });
+        });
+
+        function fetchProgress(subchapterId, audio) {
+            fetch(`/books/get-progress/${subchapterId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.last_position > 0 && audio.currentTime === 0) {
+                        audio.currentTime = data.last_position;
+                    }
+                })
+                .catch(error => console.error('Error fetching progress:', error));
+        }
+
+        function updateProgress(subchapterId, currentTime) {
+            fetch(`/books/update-progress/${subchapterId}/${Math.floor(currentTime)}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => console.log('Progress updated:', data))
+            .catch(error => console.error('Error updating progress:', error));
+        }
+
+        function playAudio(subchapterId, button) {
+            var audio = document.getElementById('audio-' + subchapterId);
+            var subchapterBox = document.getElementById('subchapter-box-' + subchapterId);
+            console.log('Playing audio for subchapter:', subchapterId); // Для отладки
+            console.log('Audio element:', audio);
+            console.log('Subchapter box element:', subchapterBox);
+
+            if (audio.paused) {
+                document.querySelectorAll('audio').forEach(el => {
+                    el.pause();
+                    var box = el.closest('.box');
+                    box.classList.remove('active-subchapter');
+                    box.querySelector('.play-pause').textContent = '▶️';
+                });
+                audio.play();
+                button.textContent = '⏸';
+                subchapterBox.classList.add('active-subchapter');
+            } else {
+                audio.pause();
+                button.textContent = '▶️';
+                subchapterBox.classList.remove('active-subchapter');
+            }
+        }
+
+        function setPlaybackRate(subchapterId, rate, button) {
+            var audio = document.getElementById('audio-' + subchapterId);
+            audio.playbackRate = rate;
+            button.closest('.buttons').querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('active-button');
+            });
+            button.classList.add('active-button');
+            console.log('Set playback rate to', rate, 'for subchapter', subchapterId);
+        }
+        function toggleSubchapters(chapterId) {
+            var subchapters = document.getElementById('subchapters-' + chapterId);
+            if (subchapters.classList.contains('hidden')) {
+                subchapters.classList.remove('hidden');
+                subchapters.classList.add('visible');
+            } else {
+                subchapters.classList.remove('visible');
+                subchapters.classList.add('hidden');
+            }
+        }
+    </script>
 </body>
 </html>
+
