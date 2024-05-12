@@ -15,10 +15,15 @@ class SubChapter(models.Model):
     audio_file = models.FileField(upload_to='subchapters/')
     #duration = models.DurationField(default=0, editable=False)  # используем DurationField для хранения времени
 
-class ListeningProgress(models.Model):
+'''class ListeningProgress(models.Model):
     subchapter = models.ForeignKey(SubChapter, on_delete=models.CASCADE, related_name='progress')
     last_position = models.DurationField(default=0)  # время в секундах, где пользователь остановился, используем DurationField
     total_listened = models.DurationField(default=0)  # суммарное время прослушивания
 
     def __str__(self):
-        return f'{self.subchapter.chapter.book.name} - {self.subchapter.chapter.name} - {self.subchapter.name}: {self.last_position}s'
+        return f'{self.subchapter.chapter.book.name} - {self.subchapter.chapter.name} - {self.subchapter.name}: {self.last_position}s'''
+
+class ListeningProgress(models.Model):
+    subchapter = models.ForeignKey(SubChapter, on_delete=models.CASCADE, related_name='progress')
+    last_position = models.IntegerField(default=0)  # время в секундах
+    total_listened = models.IntegerField(default=0)  # суммарное время прослушивания
