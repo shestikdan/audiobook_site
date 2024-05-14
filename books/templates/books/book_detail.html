@@ -10,6 +10,10 @@
             border-left: 5px solid #3273dc; /* Синий бордюр для активной подглавы */
             background-color: #e8f0fe; /* Светло-голубой фон для активной подглавы */
         }
+        .completed-subchapter {
+            border-left: 5px solid #23d160; /* Зеленый бордюр для завершенной подглавы */
+            background-color: #e0f7e0; /* Светло-зеленый фон для завершенной подглавы */
+        }
         @media (max-width: 768px) {
         .buttons.has-addons button {
             width: 100%;  
@@ -17,6 +21,75 @@
         }
         .media-content {
             margin-bottom: 10px; 
+        }
+        .progress-range {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: transparent;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .15s ease-in-out;
+        }
+        .progress-range:hover {
+            opacity: 1;
+        }
+        .progress-range::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: linear-gradient(to right, #00d1b2 var(--progress-value), #ced4da var(--progress-value));
+            border-radius: 4px;
+        }
+        .progress-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #000000; /* Серый ползунок */
+            cursor: pointer;
+            border-radius: 50%;
+            margin-top: -3.5px; /* Смещение ползунка чтобы он был на одной линии с треком */
+        }
+        .progress-range:focus::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #00d1b2 var(--progress-value), #ced4da var(--progress-value));
+        }
+        .progress-range::-moz-range-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: linear-gradient(to right, #00d1b2 var(--progress-value), #ced4da var(--progress-value));
+            border-radius: 4px;
+        }
+        .progress-range::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            background: #ced4da; /* Серый ползунок */
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .progress-range::-ms-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: transparent;
+            border-color: transparent;
+            color: transparent;
+        }
+        .progress-range::-ms-fill-lower {
+            background: #ced4da;
+            border-radius: 4px;
+        }
+        .progress-range::-ms-fill-upper {
+            background: #ced4da;
+            border-radius: 4px;
+        }
+        .progress-range::-ms-thumb {
+            width: 15px;
+            height: 15px;
+            background: #ced4da; /* Серый ползунок */
+            cursor: pointer;
+            border-radius: 50%;
         }
     }
     </style>
@@ -51,7 +124,7 @@
                             <button class="button column" onclick="setPlaybackRate('{{ subchapter.id }}', 2, this)">2x</button>
                         </div>
                         <div id="current-time-{{ subchapter.id }}">0</div>
-                        <progress class="progress is-primary" value="0" max="100" id="progress-{{ subchapter.id }}">0%</progress>
+                        <input type="range" class="progress-range" value="0" max="100" id="progress-{{ subchapter.id }}" step="0.1">
                     </div>
                     {% endfor %}
                 </div>
@@ -74,6 +147,11 @@
                     el.pause();
                     el.closest('.box').querySelector('button').textContent = 'Play';
                 });
+
+                document.querySelectorAll('.active-subchapter').forEach(el => {
+                    el.classList.remove('active-subchapter');
+                });
+
                 audio.play();
                 button.textContent = 'Pause';
                 subchapterBox.classList.add('active-subchapter');
@@ -95,21 +173,30 @@
             button.classList.add('is-info');
         }
 
-        
+        function markAsCompleted(subchapterId) {
+            const subchapterBox = document.getElementById('subchapter-box-' + subchapterId);
+            subchapterBox.classList.add('completed-subchapter');
+        }
 
         function fetchProgress(subchapterId, audio, progress) {
             fetch(`/books/get-progress/${subchapterId}/`)
                 .then(response => response.json())
                 .then(data => {
-                    if (data.last_position > 0) {
-                        audio.currentTime = data.last_position || 0;
+                    if (data.last_position > 0 && isFinite(data.last_position)) {
+                        audio.currentTime = data.last_position;
                         const value = (audio.currentTime / audio.duration) * 100;
-                        progress.value = value;
-                        progress.textContent = Math.round(value) + '%';
+                        if (isFinite(value)) {
+                            progress.value = value;
+                            progress.textContent = Math.round(value) + '%';
+                        }
+                        if (Math.abs(audio.duration - data.last_position) < 0.9) {  // Допустимая погрешность 0.5 секунды
+                            markAsCompleted(subchapterId);
+                        }
                     }
                 })
                 .catch(error => console.error('Error fetching progress:', error));
         }
+
 
         function updateProgress(subchapterId, currentTime) {
             fetch(`/books/update-progress/${subchapterId}/${currentTime}/`, {
@@ -141,10 +228,16 @@
         }
 
         function setProgress(progressBar, currentTime, duration) {
-            const value = currentTime / duration * 100;
-            progressBar.value = value;
-            progressBar.textContent = Math.round(value) + '%';
-        }
+            if (isFinite(currentTime) && isFinite(duration) && duration > 0) {
+                const value = (currentTime / duration) * 100;
+                progressBar.value = value;
+                progressBar.style.setProperty('--progress-value', `${value}%`);
+                // progressBar.textContent = Math.round(value) + '%';
+            } else {
+                console.error('Invalid currentTime or duration:', currentTime, duration);
+            }
+        }   
+
         function formatTime(seconds) {
             const min = Math.floor(seconds / 60); 
             const sec = Math.floor(seconds % 60); 
@@ -152,13 +245,33 @@
             return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
         }
 
+        function playNextAudio(currentAudio) {
+            const allAudioElements = Array.from(document.querySelectorAll('audio'));
+            const currentIndex = allAudioElements.indexOf(currentAudio);
+            if (currentIndex >= 0 && currentIndex < allAudioElements.length - 1) {
+                const nextAudio = allAudioElements[currentIndex + 1];
+                const nextSubchapterBox = nextAudio.closest('.box');
+                const nextButton = nextSubchapterBox.querySelector('button');
+
+                
+                playAudio(nextAudio.id.split('-')[1], nextButton);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('audio').forEach(audio => {
-                
+                audio.addEventListener('ended', () => {
+                    updateProgress(subchapterId, Math.floor(audio.duration));
+                    markAsCompleted(subchapterId);
+                    playNextAudio(audio);
+                });
+
                 audio.addEventListener('loadedmetadata', () => {
                     const duration = Math.floor(audio.duration);
+                    const currentTimeDisplay = document.getElementById('current-time-' + audio.id.split('-')[1]);
                     currentTimeDisplay.textContent = `00:00 / ${formatTime(duration)}`;
-
+                    fetchProgress(subchapterId, audio, progressBar);
+                    console.log('fetchProgress(subchapterId, audio, progressBar);')
                 });
 
                 const subchapterId = audio.id.split('-')[1];
@@ -166,17 +279,25 @@
 
                 fetchProgress(subchapterId, audio, progressBar);
                 audio.addEventListener('timeupdate', () => {
-                    const subchapterId = audio.id.split('-')[1];
-                    const progressBar = document.getElementById('progress-' + subchapterId);
-                    setProgress(progressBar, audio.currentTime, audio.duration);
                     const currentTimeDisplay = document.getElementById('current-time-' + subchapterId);
                     const currentTime = Math.floor(audio.currentTime);
                     const duration = Math.floor(audio.duration);
-                  currentTimeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
-                    console.log(currentTime, '   ', subchapterId)
-                    const value = (audio.currentTime / audio.duration) * 100;
-                    progressBar.value = value;
-                    progressBar.textContent = Math.round(value) + '%';
+
+                    if (isFinite(currentTime) && isFinite(duration)) {
+                        currentTimeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+                        setProgress(progressBar, currentTime, duration);
+                    }
+                });
+                progressBar.addEventListener('input', (event) => {
+                    const duration = audio.duration;
+                    if (isFinite(duration) && duration > 0) {
+                        const value = event.target.value;
+                        const currentTime = (value / 100) * duration;
+                        audio.currentTime = currentTime;
+                        const currentTimeDisplay = document.getElementById('current-time-' + subchapterId);
+                        currentTimeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+                        updateProgress(subchapterId, Math.floor(currentTime));
+                    }
                 });
             });
         });
