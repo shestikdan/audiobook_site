@@ -21,40 +21,6 @@ def get_progress(request, subchapter_id):
         # Если прогресса нет, возвращаем 0
         return JsonResponse({'last_position': 0})
 
-'''@csrf_exempt
-def update_progress(request, subchapter_id, seconds):
-    if request.method == 'POST':
-        try:
-            seconds = int(seconds)  # Убеждаемся, что seconds это целое число
-            subchapter = SubChapter.objects.get(pk=subchapter_id)
-            progress, created = ListeningProgress.objects.get_or_create(subchapter=subchapter)
-            if not created:
-                progress.total_listened += max(0, seconds - progress.last_position)
-            progress.last_position = seconds
-            progress.save()
-            return JsonResponse({'status': 'success'})
-        except SubChapter.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'SubChapter not found'}, status=404)
-        except ValueError:
-            return JsonResponse({'status': 'error', 'message': 'Invalid seconds value'}, status=400)
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
-    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)'''
-
-'''@csrf_exempt
-def update_progress(request, subchapter_id, seconds):
-    if request.method == 'POST':
-        subchapter = SubChapter.objects.get(pk=subchapter_id)
-        progress, created = ListeningProgress.objects.get_or_create(subchapter=subchapter)
-        if not created:
-            progress.total_listened += (seconds - progress.last_position) if seconds > progress.last_position else 0
-        progress.last_position = seconds
-        progress.save()
-        return JsonResponse({'status': 'success'})
-    print("Chapter ID:", subchapter_id)
-    print("Seconds:", seconds)
-    return JsonResponse({'status': 'error'}, status=400)'''
 @csrf_exempt
 def update_progress(request, subchapter_id, seconds):
     if request.method == 'POST':
