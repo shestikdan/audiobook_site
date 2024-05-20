@@ -103,7 +103,7 @@
                 <article class="media">
                     <div class="media-content">
                         <div class="content">
-                            <strong onclick="toggleSubchapters('subchapters-{{ chapter.id }}')" style="cursor: pointer;">
+                            <strong onclick="toggleSubchapters('subchapters-{{ chapter.id }}', {{ chapter.id }})" style="cursor: pointer;">
                                 {{ chapter.name }}
                             </strong>
                         </div>
@@ -113,10 +113,6 @@
                     {% for subchapter in chapter.subchapters.all %}
                     <div class="box" id="subchapter-box-{{ subchapter.id }}">
                         <strong>{{ subchapter.name }}</strong>
-                        <audio controls id="audio-{{ subchapter.id }}" hidden>
-                            <source src="{{ subchapter.audio_file.url }}" type="audio/mpeg">
-                            Ваш браузер не поддерживает аудио элемент.
-                        </audio>
                         <div class="buttons has-addons">
                             <button class="button is-primary column" onclick="playAudio('{{ subchapter.id }}', this)">Play</button>
                             <button class="button column is-info" onclick="setPlaybackRate('{{ subchapter.id }}', 1, this)">1x</button>
@@ -134,11 +130,36 @@
     </section>
 
     <script>
-        function toggleSubchapters(id) {
+        function toggleSubchapters(id, chapterId) {
             var element = document.getElementById(id);
-            element.style.display = (element.style.display === 'none') ? 'block' : 'none';
-        }
-
+            if (element.style.display === 'none') {
+                element.style.display = 'block';
+                loadAudioFiles(chapterId);
+                fetchChapterProgress(chapterId);
+            } else {
+                element.style.display = 'none';
+            }
+    }
+   
+    function fetchChapterProgress(chapterId) {
+        fetch(`/books/get-chapter-progress/${chapterId}/`)
+            .then(response => response.json())
+            .then(data => {
+                for (const [subchapterId, lastPosition] of Object.entries(data)) {
+                    const audio = document.getElementById(`audio-${subchapterId}`);
+                    const progressBar = document.getElementById(`progress-${subchapterId}`);
+                    if (audio && progressBar) {
+                        audio.currentTime = lastPosition;
+                        const value = (audio.currentTime / audio.duration) * 100;
+                        if (isFinite(value)) {
+                            progressBar.value = value;
+                            progressBar.style.setProperty('--progress-value', `${value}%`);
+                        }
+                    }
+                }
+            })
+            .catch(error => console.error('Error fetching chapter progress:', error));
+    }
         function playAudio(subchapterId, button) {
             var audio = document.getElementById('audio-' + subchapterId);
             var subchapterBox = document.getElementById('subchapter-box-' + subchapterId);

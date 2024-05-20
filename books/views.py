@@ -20,6 +20,17 @@ def get_progress(request, subchapter_id):
     except ListeningProgress.DoesNotExist:
         # Если прогресса нет, возвращаем 0
         return JsonResponse({'last_position': 0})
+    
+def get_chapter_progress(request, chapter_id):
+    subchapters = SubChapter.objects.filter(chapter_id=chapter_id)
+    progress_data = {}
+    for subchapter in subchapters:
+        try:
+            progress = ListeningProgress.objects.get(subchapter=subchapter)
+            progress_data[subchapter.id] = progress.last_position
+        except ListeningProgress.DoesNotExist:
+            progress_data[subchapter.id] = 0
+    return JsonResponse(progress_data)
 
 @csrf_exempt
 def update_progress(request, subchapter_id, seconds):
