@@ -15,83 +15,83 @@
             background-color: #e0f7e0; /* Светло-зеленый фон для завершенной подглавы */
         }
         @media (max-width: 768px) {
-        .buttons.has-addons button {
-            width: 100%;  
-            margin-top: 5px; 
+            .buttons.has-addons button {
+                width: 100%;
+                margin-top: 5px;
+            }
+            .media-content {
+                margin-bottom: 10px;
+            }
+            .progress-range {
+                -webkit-appearance: none;
+                width: 100%;
+                height: 8px;
+                background: transparent;
+                outline: none;
+                opacity: 0.7;
+                transition: opacity .15s ease-in-out;
+            }
+            .progress-range:hover {
+                opacity: 1;
+            }
+            .progress-range::-webkit-slider-runnable-track {
+                width: 100%;
+                height: 8px;
+                cursor: pointer;
+                background: linear-gradient(to right, #00d1b2 var(--progress-value), #ced4da var(--progress-value));
+                border-radius: 4px;
+            }
+            .progress-range::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 15px;
+                height: 15px;
+                background: #000000; /* Серый ползунок */
+                cursor: pointer;
+                border-radius: 50%;
+                margin-top: -3.5px; /* Смещение ползунка чтобы он был на одной линии с треком */
+            }
+            .progress-range:focus::-webkit-slider-runnable-track {
+                background: linear-gradient(to right, #00d1b2 var(--progress-value), #ced4da var(--progress-value));
+            }
+            .progress-range::-moz-range-track {
+                width: 100%;
+                height: 8px;
+                cursor: pointer;
+                background: linear-gradient(to right, #00d1b2 var(--progress-value), #ced4da var(--progress-value));
+                border-radius: 4px;
+            }
+            .progress-range::-moz-range-thumb {
+                width: 15px;
+                height: 15px;
+                background: #ced4da; /* Серый ползунок */
+                cursor: pointer;
+                border-radius: 50%;
+            }
+            .progress-range::-ms-track {
+                width: 100%;
+                height: 8px;
+                cursor: pointer;
+                background: transparent;
+                border-color: transparent;
+                color: transparent;
+            }
+            .progress-range::-ms-fill-lower {
+                background: #ced4da;
+                border-radius: 4px;
+            }
+            .progress-range::-ms-fill-upper {
+                background: #ced4da;
+                border-radius: 4px;
+            }
+            .progress-range::-ms-thumb {
+                width: 15px;
+                height: 15px;
+                background: #ced4da; /* Серый ползунок */
+                cursor: pointer;
+                border-radius: 50%;
+            }
         }
-        .media-content {
-            margin-bottom: 10px; 
-        }
-        .progress-range {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 8px;
-            background: transparent;
-            outline: none;
-            opacity: 0.7;
-            transition: opacity .15s ease-in-out;
-        }
-        .progress-range:hover {
-            opacity: 1;
-        }
-        .progress-range::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 8px;
-            cursor: pointer;
-            background: linear-gradient(to right, #00d1b2 var(--progress-value), #ced4da var(--progress-value));
-            border-radius: 4px;
-        }
-        .progress-range::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 15px;
-            height: 15px;
-            background: #000000; /* Серый ползунок */
-            cursor: pointer;
-            border-radius: 50%;
-            margin-top: -3.5px; /* Смещение ползунка чтобы он был на одной линии с треком */
-        }
-        .progress-range:focus::-webkit-slider-runnable-track {
-            background: linear-gradient(to right, #00d1b2 var(--progress-value), #ced4da var(--progress-value));
-        }
-        .progress-range::-moz-range-track {
-            width: 100%;
-            height: 8px;
-            cursor: pointer;
-            background: linear-gradient(to right, #00d1b2 var(--progress-value), #ced4da var(--progress-value));
-            border-radius: 4px;
-        }
-        .progress-range::-moz-range-thumb {
-            width: 15px;
-            height: 15px;
-            background: #ced4da; /* Серый ползунок */
-            cursor: pointer;
-            border-radius: 50%;
-        }
-        .progress-range::-ms-track {
-            width: 100%;
-            height: 8px;
-            cursor: pointer;
-            background: transparent;
-            border-color: transparent;
-            color: transparent;
-        }
-        .progress-range::-ms-fill-lower {
-            background: #ced4da;
-            border-radius: 4px;
-        }
-        .progress-range::-ms-fill-upper {
-            background: #ced4da;
-            border-radius: 4px;
-        }
-        .progress-range::-ms-thumb {
-            width: 15px;
-            height: 15px;
-            background: #ced4da; /* Серый ползунок */
-            cursor: pointer;
-            border-radius: 50%;
-        }
-    }
     </style>
 </head>
 <body>
@@ -111,7 +111,7 @@
                 </article>
                 <div id="subchapters-{{ chapter.id }}" style="display:none;">
                     {% for subchapter in chapter.subchapters.all %}
-                    <div class="box" id="subchapter-box-{{ subchapter.id }}">
+                    <div class="box" id="subchapter-box-{{ subchapter.id }}" data-audio-url="{{ subchapter.audio_file.url }}">
                         <strong>{{ subchapter.name }}</strong>
                         <div class="buttons has-addons">
                             <button class="button is-primary column" onclick="playAudio('{{ subchapter.id }}', this)">Play</button>
@@ -139,27 +139,58 @@
             } else {
                 element.style.display = 'none';
             }
-    }
-   
-    function fetchChapterProgress(chapterId) {
-        fetch(`/books/get-chapter-progress/${chapterId}/`)
-            .then(response => response.json())
-            .then(data => {
-                for (const [subchapterId, lastPosition] of Object.entries(data)) {
-                    const audio = document.getElementById(`audio-${subchapterId}`);
-                    const progressBar = document.getElementById(`progress-${subchapterId}`);
-                    if (audio && progressBar) {
-                        audio.currentTime = lastPosition;
-                        const value = (audio.currentTime / audio.duration) * 100;
-                        if (isFinite(value)) {
-                            progressBar.value = value;
-                            progressBar.style.setProperty('--progress-value', `${value}%`);
-                        }
+        }
+
+        function fetchChapterProgress(chapterId) {
+            fetch(`/books/get-chapter-progress/${chapterId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data); // Логирование для проверки формата данных
+                    if (data && typeof data === 'object') {
+                        Object.keys(data).forEach(subchapterId => {
+                            const lastPosition = data[subchapterId];
+                            const audio = document.getElementById(`audio-${subchapterId}`);
+                            if (audio) {
+                                audio.currentTime = lastPosition;
+                            }
+                            const progressBar = document.getElementById(`progress-${subchapterId}`);
+                            if (progressBar) {
+                                const value = (lastPosition / audio.duration) * 100;
+                                if (isFinite(value)) {
+                                    progressBar.value = value;
+                                    progressBar.style.setProperty('--progress-value', `${value}%`);
+                                }
+                            }
+                        });
+                    } else {
+                        console.error('Unexpected response format:', data);
                     }
+                })
+                .catch(error => console.error('Error fetching chapter progress:', error));
+        }
+
+
+        function loadAudioFiles(chapterId) {
+            document.querySelectorAll(`#subchapters-${chapterId} .box`).forEach((subchapterBox) => {
+                const subchapterId = subchapterBox.id.split('-')[2];
+                const audioSourceUrl = subchapterBox.dataset.audioUrl;
+                if (!document.getElementById(`audio-${subchapterId}`)) {
+                    const audioContainer = document.createElement('audio');
+                    audioContainer.setAttribute('controls', '');
+                    audioContainer.setAttribute('id', `audio-${subchapterId}`);
+                    audioContainer.hidden = true;
+
+                    const source = document.createElement('source');
+                    source.setAttribute('src', audioSourceUrl);
+                    source.setAttribute('type', 'audio/ogg');
+
+                    audioContainer.appendChild(source);
+                    subchapterBox.insertBefore(audioContainer, subchapterBox.firstChild);
+                    addAudioEventListeners(audioContainer, subchapterId); // Вызов функции
                 }
-            })
-            .catch(error => console.error('Error fetching chapter progress:', error));
-    }
+            });
+        }
+
         function playAudio(subchapterId, button) {
             var audio = document.getElementById('audio-' + subchapterId);
             var subchapterBox = document.getElementById('subchapter-box-' + subchapterId);
@@ -168,7 +199,6 @@
                     el.pause();
                     el.closest('.box').querySelector('button').textContent = 'Play';
                 });
-
                 document.querySelectorAll('.active-subchapter').forEach(el => {
                     el.classList.remove('active-subchapter');
                 });
@@ -176,9 +206,6 @@
                 audio.play();
                 button.textContent = 'Pause';
                 subchapterBox.classList.add('active-subchapter');
-                const progress = subchapterBox.querySelector('progress');
-                fetchProgress(subchapterId, audio, progress);
-
             } else {
                 audio.pause();
                 button.textContent = 'Play';
@@ -187,44 +214,12 @@
             }
         }
 
-        function setPlaybackRate(subchapterId, rate, button) {
-            var audio = document.getElementById('audio-' + subchapterId);
-            audio.playbackRate = rate;
-            button.parentNode.querySelectorAll('button').forEach(btn => btn.classList.remove('is-info'));
-            button.classList.add('is-info');
-        }
-
-        function markAsCompleted(subchapterId) {
-            const subchapterBox = document.getElementById('subchapter-box-' + subchapterId);
-            subchapterBox.classList.add('completed-subchapter');
-        }
-
-        function fetchProgress(subchapterId, audio, progress) {
-            fetch(`/books/get-progress/${subchapterId}/`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.last_position > 0 && isFinite(data.last_position)) {
-                        audio.currentTime = data.last_position;
-                        const value = (audio.currentTime / audio.duration) * 100;
-                        if (isFinite(value)) {
-                            progress.value = value;
-                            progress.textContent = Math.round(value) + '%';
-                        }
-                        if (Math.abs(audio.duration - data.last_position) < 0.9) {  // Допустимая погрешность 0.5 секунды
-                            markAsCompleted(subchapterId);
-                        }
-                    }
-                })
-                .catch(error => console.error('Error fetching progress:', error));
-        }
-
-
         function updateProgress(subchapterId, currentTime) {
             fetch(`/books/update-progress/${subchapterId}/${currentTime}/`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
                 },
                 body: JSON.stringify({ 'seconds': currentTime })
             })
@@ -248,16 +243,52 @@
             return cookieValue;
         }
 
+        function addAudioEventListeners(audio, subchapterId) {
+            const progressBar = document.getElementById('progress-' + subchapterId);
+            const currentTimeDisplay = document.getElementById('current-time-' + subchapterId);
+
+            audio.addEventListener('timeupdate', () => {
+                const currentTime = Math.floor(audio.currentTime);
+                const duration = Math.floor(audio.duration);
+
+                if (isFinite(currentTime) && isFinite(duration)) {
+                    currentTimeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+                    setProgress(progressBar, currentTime, duration);
+                }
+            });
+
+            audio.addEventListener('ended', () => {
+                updateProgress(subchapterId, Math.floor(audio.duration));
+                markAsCompleted(subchapterId);
+                playNextAudio(audio);
+            });
+
+            progressBar.addEventListener('input', (event) => {
+                const duration = audio.duration;
+                if (isFinite(duration) && duration > 0) {
+                    const value = event.target.value;
+                    const currentTime = (value / 100) * duration;
+                    audio.currentTime = currentTime;
+                    currentTimeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+                    updateProgress(subchapterId, Math.floor(currentTime));
+                }
+            });
+        }
+
+        function markAsCompleted(subchapterId) {
+            const subchapterBox = document.getElementById('subchapter-box-' + subchapterId);
+            subchapterBox.classList.add('completed-subchapter');
+        }
+
         function setProgress(progressBar, currentTime, duration) {
             if (isFinite(currentTime) && isFinite(duration) && duration > 0) {
                 const value = (currentTime / duration) * 100;
                 progressBar.value = value;
                 progressBar.style.setProperty('--progress-value', `${value}%`);
-                // progressBar.textContent = Math.round(value) + '%';
             } else {
                 console.error('Invalid currentTime or duration:', currentTime, duration);
             }
-        }   
+        }
 
         function formatTime(seconds) {
             const min = Math.floor(seconds / 60); 
@@ -274,54 +305,10 @@
                 const nextSubchapterBox = nextAudio.closest('.box');
                 const nextButton = nextSubchapterBox.querySelector('button');
 
-                
                 playAudio(nextAudio.id.split('-')[1], nextButton);
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('audio').forEach(audio => {
-                audio.addEventListener('ended', () => {
-                    updateProgress(subchapterId, Math.floor(audio.duration));
-                    markAsCompleted(subchapterId);
-                    playNextAudio(audio);
-                });
-
-                audio.addEventListener('loadedmetadata', () => {
-                    const duration = Math.floor(audio.duration);
-                    const currentTimeDisplay = document.getElementById('current-time-' + audio.id.split('-')[1]);
-                    currentTimeDisplay.textContent = `00:00 / ${formatTime(duration)}`;
-                    fetchProgress(subchapterId, audio, progressBar);
-                    console.log('fetchProgress(subchapterId, audio, progressBar);')
-                });
-
-                const subchapterId = audio.id.split('-')[1];
-                const progressBar = document.getElementById('progress-' + subchapterId);
-
-                fetchProgress(subchapterId, audio, progressBar);
-                audio.addEventListener('timeupdate', () => {
-                    const currentTimeDisplay = document.getElementById('current-time-' + subchapterId);
-                    const currentTime = Math.floor(audio.currentTime);
-                    const duration = Math.floor(audio.duration);
-
-                    if (isFinite(currentTime) && isFinite(duration)) {
-                        currentTimeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
-                        setProgress(progressBar, currentTime, duration);
-                    }
-                });
-                progressBar.addEventListener('input', (event) => {
-                    const duration = audio.duration;
-                    if (isFinite(duration) && duration > 0) {
-                        const value = event.target.value;
-                        const currentTime = (value / 100) * duration;
-                        audio.currentTime = currentTime;
-                        const currentTimeDisplay = document.getElementById('current-time-' + subchapterId);
-                        currentTimeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
-                        updateProgress(subchapterId, Math.floor(currentTime));
-                    }
-                });
-            });
-        });
     </script>
 </body>
 </html>

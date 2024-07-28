@@ -4,6 +4,23 @@ from .models import Chapter, ListeningProgress, Book, SubChapter
 
 from django.views.decorators.csrf import csrf_exempt
 
+def get_chapter_progress(request, chapter_id):
+    subchapters = SubChapter.objects.filter(chapter_id=chapter_id)
+    progress_data = []
+    for subchapter in subchapters:
+        try:
+            progress = ListeningProgress.objects.get(subchapter=subchapter)
+            progress_data.append({
+                'subchapter_id': subchapter.id,
+                'last_position': progress.last_position,
+            })
+        except ListeningProgress.DoesNotExist:
+            progress_data.append({
+                'subchapter_id': subchapter.id,
+                'last_position': 0,
+            })
+    return JsonResponse(progress_data, safe=False)
+
 def book_list(request):
     books = Book.objects.all()
     return render(request, 'books/book_list.html', {'books': books})

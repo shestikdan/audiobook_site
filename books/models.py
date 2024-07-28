@@ -27,3 +27,5 @@ class ListeningProgress(models.Model):
     subchapter = models.ForeignKey(SubChapter, on_delete=models.CASCADE, related_name='progress')
     last_position = models.IntegerField(default=0)  # время в секундах
     total_listened = models.IntegerField(default=0)  # суммарное время прослушивания
+
+    
